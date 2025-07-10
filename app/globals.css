@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: full-screen fix for mobile */
+html, body {
+  @apply bg-black text-white h-full w-full overflow-x-hidden;
+}

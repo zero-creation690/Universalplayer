@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import UniversalPlayer from "@/components/UniversalPlayer"
+import UniversalPlayer from "../components/UniversalPlayer"
 
 export default function HomePage() {
   const [videoUrl, setVideoUrl] = useState("")

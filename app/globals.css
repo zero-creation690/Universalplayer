@@ -1,21 +1,8 @@
-// app/layout.tsx
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-import "./globals.css"
-import type { Metadata } from "next"
-
-export const metadata: Metadata = {
-  title: "UniversalPlayer",
-  description: "A universal media player with multi-audio and subtitles",
-}
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  )
+/* Optional: full-screen fix for mobile */
+html, body {
+  @apply bg-black text-white h-full w-full overflow-x-hidden;
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import shaka from "shaka-player"
+import * as shaka from "shaka-player" // ✅ FIXED import
 
 interface Props {
   videoUrl: string
@@ -18,20 +18,24 @@ export default function UniversalPlayer({ videoUrl }: Props) {
 
   useEffect(() => {
     const video = videoRef.current
-    const player = new shaka.Player(video!)
-    playerRef.current = player
+    if (!video) return
 
     shaka.polyfill.installAll()
+
+    const player = new shaka.Player(video)
+    playerRef.current = player
 
     async function loadVideo() {
       try {
         await player.load(videoUrl)
 
+        // Detect audio tracks
         const variants = player.getVariantTracks()
         const uniqueLangs = [...new Set(variants.map((t) => t.language))]
         setAudioTracks(uniqueLangs)
         setSelectedAudio(player.getAudioLanguages()[0] || "")
 
+        // Detect subtitle tracks
         const subs = player.getTextTracks().map((t) => t.language)
         setSubtitleTracks(subs)
         setSelectedSubtitle(player.getTextLanguages()[0] || "")

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import * as shaka from "shaka-player" // ✅ FIXED import
 
 interface Props {
   videoUrl: string
@@ -9,7 +8,7 @@ interface Props {
 
 export default function UniversalPlayer({ videoUrl }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const playerRef = useRef<shaka.Player | null>(null)
+  const playerRef = useRef<any>(null)
 
   const [audioTracks, setAudioTracks] = useState<string[]>([])
   const [subtitleTracks, setSubtitleTracks] = useState<string[]>([])
@@ -17,25 +16,32 @@ export default function UniversalPlayer({ videoUrl }: Props) {
   const [selectedSubtitle, setSelectedSubtitle] = useState<string>("")
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    const loadShaka = async () => {
+      // Dynamically load shaka-player script
+      if (!window.shaka) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script")
+          script.src = "https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.js"
+          script.async = true
+          script.onload = () => resolve()
+          script.onerror = () => reject(new Error("Shaka Player failed to load"))
+          document.body.appendChild(script)
+        })
+      }
 
-    shaka.polyfill.installAll()
+      if (!window.shaka || !videoRef.current) return
+      window.shaka.polyfill.installAll()
+      const player = new window.shaka.Player(videoRef.current)
+      playerRef.current = player
 
-    const player = new shaka.Player(video)
-    playerRef.current = player
-
-    async function loadVideo() {
       try {
         await player.load(videoUrl)
 
-        // Detect audio tracks
         const variants = player.getVariantTracks()
         const uniqueLangs = [...new Set(variants.map((t) => t.language))]
         setAudioTracks(uniqueLangs)
         setSelectedAudio(player.getAudioLanguages()[0] || "")
 
-        // Detect subtitle tracks
         const subs = player.getTextTracks().map((t) => t.language)
         setSubtitleTracks(subs)
         setSelectedSubtitle(player.getTextLanguages()[0] || "")
@@ -44,20 +50,18 @@ export default function UniversalPlayer({ videoUrl }: Props) {
       }
     }
 
-    loadVideo()
+    loadShaka()
 
     return () => {
-      player.destroy()
+      playerRef.current?.destroy()
     }
   }, [videoUrl])
 
-  // 🔁 Switch audio track
   const switchAudio = (lang: string) => {
     playerRef.current?.selectAudioLanguage(lang)
     setSelectedAudio(lang)
   }
 
-  // 🔁 Switch subtitle track
   const switchSubtitle = (lang: string) => {
     if (lang === "off") {
       playerRef.current?.setTextTrackVisibility(false)
@@ -79,7 +83,6 @@ export default function UniversalPlayer({ videoUrl }: Props) {
         playsInline
       />
 
-      {/* 🎧 Audio selector */}
       {audioTracks.length > 1 && (
         <div className="absolute top-4 right-4 bg-black/80 p-2 rounded shadow text-white z-50">
           <label className="block mb-1 text-sm">Audio</label>
@@ -97,7 +100,6 @@ export default function UniversalPlayer({ videoUrl }: Props) {
         </div>
       )}
 
-      {/* 💬 Subtitle selector */}
       {subtitleTracks.length > 0 && (
         <div className="absolute top-20 right-4 bg-black/80 p-2 rounded shadow text-white z-50">
           <label className="block mb-1 text-sm">Subtitles</label>

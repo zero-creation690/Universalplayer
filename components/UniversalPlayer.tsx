@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from "react"
 
+declare global {
+  interface Window {
+    shaka: any
+  }
+}
+
 interface Props {
   videoUrl: string
 }
@@ -17,36 +23,37 @@ export default function UniversalPlayer({ videoUrl }: Props) {
 
   useEffect(() => {
     const loadShaka = async () => {
-      // Dynamically load shaka-player script
       if (!window.shaka) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement("script")
           script.src = "https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.js"
           script.async = true
           script.onload = () => resolve()
-          script.onerror = () => reject(new Error("Shaka Player failed to load"))
-          document.body.appendChild(script)
+          script.onerror = () => reject("Failed to load Shaka Player")
+          document.head.appendChild(script)
         })
       }
 
-      if (!window.shaka || !videoRef.current) return
-      window.shaka.polyfill.installAll()
-      const player = new window.shaka.Player(videoRef.current)
-      playerRef.current = player
+      if (videoRef.current) {
+        const player = new window.shaka.Player(videoRef.current)
+        playerRef.current = player
 
-      try {
-        await player.load(videoUrl)
+        window.shaka.polyfill.installAll()
 
-        const variants = player.getVariantTracks()
-        const uniqueLangs = [...new Set(variants.map((t) => t.language))]
-        setAudioTracks(uniqueLangs)
-        setSelectedAudio(player.getAudioLanguages()[0] || "")
+        try {
+          await player.load(videoUrl)
 
-        const subs = player.getTextTracks().map((t) => t.language)
-        setSubtitleTracks(subs)
-        setSelectedSubtitle(player.getTextLanguages()[0] || "")
-      } catch (error) {
-        console.error("Load error:", error)
+          const variants = player.getVariantTracks()
+          const uniqueLangs = [...new Set(variants.map((t: any) => t.language))]
+          setAudioTracks(uniqueLangs)
+          setSelectedAudio(player.getAudioLanguages()[0] || "")
+
+          const subs = player.getTextTracks().map((t: any) => t.language)
+          setSubtitleTracks(subs)
+          setSelectedSubtitle(player.getTextLanguages()[0] || "")
+        } catch (error) {
+          console.error("Shaka load error:", error)
+        }
       }
     }
 
